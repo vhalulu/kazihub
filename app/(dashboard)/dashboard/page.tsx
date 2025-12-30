@@ -160,7 +160,7 @@ export default function DashboardPage() {
               </button>
 
               {/* Notification Bell */}
-              <NotificationBell />
+              {profile && <NotificationBell userId={profile.id} />}
 
               {/* Sign Out */}
               <button
