@@ -198,7 +198,7 @@ export default function DashboardPage() {
                 <div className="text-center mt-3 sm:mt-4">
                   <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-1 flex items-center justify-center gap-2">
                     <span className="truncate max-w-[200px]">{profile.full_name}</span>
-                    {profile.is_verified && <VerifiedBadge size="sm" />}
+                    {profile.is_verified && <VerifiedBadge isVerified={profile.is_verified} size="sm" />}
                   </h2>
                   <p className="text-xs sm:text-sm font-medium text-cyan-600">{userTypeDisplay}</p>
                   {profile.rating && (
