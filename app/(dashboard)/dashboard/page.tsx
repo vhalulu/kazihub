@@ -104,7 +104,7 @@ export default function HomePage() {
         const otherTasks = availableTasks.filter(t => t.county !== userCounty)
         const sortedTasks = [...countyTasks, ...otherTasks]
 
-        setFeaturedTasks(sortedTasks.slice(0, 6))
+        setFeaturedTasks(sortedTasks.slice(0, 10))
       }
     } catch (error) {
       console.error('Error loading featured tasks:', error)
@@ -239,17 +239,6 @@ export default function HomePage() {
               <div className="text-3xl mb-3">📋</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-cyan-700">Post a Task</h3>
               <p className="text-sm text-gray-600">Describe what you need done and get quotes from taskers</p>
-            </Link>
-          )}
-
-          {isTasker && (
-            <Link
-              href="/browse-tasks"
-              className="bg-white border-2 border-gray-200 hover:border-cyan-600 rounded-lg p-6 transition group"
-            >
-              <div className="text-3xl mb-3">🔍</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-cyan-700">Find Work</h3>
-              <p className="text-sm text-gray-600">Browse available tasks and submit your proposals</p>
             </Link>
           )}
 
