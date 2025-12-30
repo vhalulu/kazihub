@@ -190,7 +190,6 @@ export default function DashboardPage() {
                 <div className="scale-90 sm:scale-100">
                   <ProfilePhotoUpload 
                     currentPhotoUrl={profile.profile_photo_url}
-                    onUploadComplete={(url) => setProfile({...profile, profile_photo_url: url})}
                   />
                 </div>
                 
