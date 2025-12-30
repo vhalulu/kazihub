@@ -189,7 +189,9 @@ export default function DashboardPage() {
               <div className="flex flex-col items-center mb-4 sm:mb-6">
                 <div className="scale-90 sm:scale-100">
                   <ProfilePhotoUpload 
+                    userId={profile.id}
                     currentPhotoUrl={profile.profile_photo_url}
+                    onUploadSuccess={(url) => setProfile({...profile, profile_photo_url: url})}
                   />
                 </div>
                 
