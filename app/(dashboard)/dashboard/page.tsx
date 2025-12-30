@@ -10,6 +10,8 @@ import VerifiedBadge from '@/components/VerifiedBadge'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import { getCategoryIcon } from '@/lib/task-categories'
 
+import { ProfileSkeleton, StatsSkeleton, TaskCardSkeleton } from '@/components/SkeletonLoaders'
+
 export default function HomePage() {
   const router = useRouter()
   const supabase = createClient()
@@ -142,10 +144,19 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-gray-50">
+        <nav className="bg-white border-b border-gray-200 h-14 md:h-16"></nav>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <ProfileSkeleton />
+          <div className="mt-6">
+            <StatsSkeleton />
+          </div>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TaskCardSkeleton />
+            <TaskCardSkeleton />
+            <TaskCardSkeleton />
+            <TaskCardSkeleton />
+          </div>
         </div>
       </div>
     )
@@ -241,14 +252,27 @@ export default function HomePage() {
             </Link>
           )}
 
-          <Link
-            href="/messages"
-            className="bg-white border-2 border-gray-200 hover:border-cyan-600 rounded-lg p-6 transition group"
-          >
-            <div className="text-3xl mb-3">💬</div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-cyan-700">Messages</h3>
-            <p className="text-sm text-gray-600">Chat with clients and taskers</p>
-          </Link>
+          {isClient && (
+            <Link
+              href="/my-tasks"
+              className="bg-white border-2 border-gray-200 hover:border-cyan-600 rounded-lg p-6 transition group"
+            >
+              <div className="text-3xl mb-3">📝</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-cyan-700">My Tasks</h3>
+              <p className="text-sm text-gray-600">View and manage your posted tasks and applications</p>
+            </Link>
+          )}
+
+          {isTasker && (
+            <Link
+              href="/my-applications"
+              className="bg-white border-2 border-gray-200 hover:border-cyan-600 rounded-lg p-6 transition group"
+            >
+              <div className="text-3xl mb-3">📬</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-cyan-700">My Applications</h3>
+              <p className="text-sm text-gray-600">Track your submitted applications and responses</p>
+            </Link>
+          )}
         </div>
 
         {/* Featured Tasks */}
