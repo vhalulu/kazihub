@@ -117,15 +117,15 @@ export default function HomePage() {
 
       if (applications) {
         const active = applications.filter(app => 
-          app.status === 'accepted' && app.task?.status === 'in_progress'
+          app.status === 'accepted' && (app.task as any)?.status === 'in_progress'
         ).length
 
         const completed = applications.filter(app => 
-          app.status === 'accepted' && app.task?.status === 'completed'
+          app.status === 'accepted' && (app.task as any)?.status === 'completed'
         ).length
 
         const earnings = applications
-          .filter(app => app.status === 'accepted' && app.task?.status === 'completed')
+          .filter(app => app.status === 'accepted' && (app.task as any)?.status === 'completed')
           .reduce((sum, app) => sum + (app.proposed_price || 0), 0)
 
         setStats({ activeTasks: active, completedTasks: completed, totalEarnings: earnings })
