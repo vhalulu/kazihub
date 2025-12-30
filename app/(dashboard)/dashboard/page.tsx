@@ -104,7 +104,7 @@ export default function HomePage() {
         const otherTasks = availableTasks.filter(t => t.county !== userCounty)
         const sortedTasks = [...countyTasks, ...otherTasks]
 
-        setFeaturedTasks(sortedTasks.slice(0, 10))
+        setFeaturedTasks(sortedTasks.slice(0, 5))
       }
     } catch (error) {
       console.error('Error loading featured tasks:', error)
@@ -265,27 +265,24 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Featured Tasks - Show for everyone */}
+        {/* Featured Tasks - Simple inline list */}
         {featuredTasks.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Featured Tasks</h2>
-              <Link href="/browse-tasks" className="text-sm font-medium text-cyan-600 hover:text-cyan-700">
-                View all →
-              </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
               {featuredTasks.map((task) => (
                 <Link
                   key={task.id}
-                  href="/browse-tasks"
-                  className="border border-gray-200 rounded-lg p-4 hover:border-cyan-300 hover:shadow-sm transition"
+                  href={`/browse-tasks`}
+                  className="block bg-white border border-gray-200 rounded-lg p-4 hover:border-cyan-300 hover:shadow-sm transition"
                 >
                   <div className="flex items-start gap-3">
                     <span className="text-2xl flex-shrink-0">{getCategoryIcon(task.category)}</span>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 mb-1 truncate">{task.title}</h3>
+                      <h3 className="font-semibold text-gray-900 mb-1">{task.title}</h3>
                       <p className="text-sm text-gray-600 line-clamp-2 mb-2">{task.description}</p>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                         <span>📍 {task.town}, {task.county}</span>
@@ -300,6 +297,16 @@ export default function HomePage() {
                   </div>
                 </Link>
               ))}
+            </div>
+
+            {/* View More Link */}
+            <div className="mt-4 text-center">
+              <Link
+                href="/browse-tasks"
+                className="inline-block px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 font-medium rounded-lg hover:border-cyan-600 hover:text-cyan-700 transition"
+              >
+                View More Tasks →
+              </Link>
             </div>
           </div>
         )}
