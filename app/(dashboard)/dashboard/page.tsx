@@ -69,8 +69,9 @@ export default function HomePage() {
         }
 
         // Load stats and featured tasks
+        loadFeaturedTasks(profileData.county)
+        
         if (profileData.user_type === 'tasker' || profileData.user_type === 'both') {
-          loadFeaturedTasks(profileData.county)
           loadTaskerStats(profileData.id)
         }
       }
@@ -275,8 +276,8 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Featured Tasks */}
-        {isTasker && featuredTasks.length > 0 && (
+        {/* Featured Tasks - Show for everyone */}
+        {featuredTasks.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Featured Tasks</h2>

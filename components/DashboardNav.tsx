@@ -19,7 +19,6 @@ export default function DashboardNav({ profile, onSignOut }: DashboardNavProps) 
   const desktopTabs = [
     { name: 'Home', href: '/dashboard', icon: '🏠' },
     ...(isClient ? [{ name: 'My Tasks', href: '/my-tasks', icon: '📝' }] : []),
-    ...(isTasker ? [{ name: 'Browse Tasks', href: '/browse-tasks', icon: '🔍' }] : []),
     ...(isTasker ? [{ name: 'Applications', href: '/my-applications', icon: '📬' }] : []),
     { name: 'Messages', href: '/messages', icon: '💬' },
     { name: 'Profile', href: '/edit-profile', icon: '👤' },
@@ -28,8 +27,8 @@ export default function DashboardNav({ profile, onSignOut }: DashboardNavProps) 
   // Mobile bottom tabs (simplified)
   const mobileTabs = [
     { name: 'Home', href: '/dashboard', icon: '🏠' },
-    ...(isTasker ? [{ name: 'Tasks', href: '/browse-tasks', icon: '🔍' }] : []),
-    ...(isClient ? [{ name: 'My Tasks', href: '/my-tasks', icon: '📝' }] : []),
+    ...(isClient ? [{ name: 'Tasks', href: '/my-tasks', icon: '📝' }] : []),
+    ...(isTasker ? [{ name: 'Apps', href: '/my-applications', icon: '📬' }] : []),
     { name: 'Messages', href: '/messages', icon: '💬' },
     { name: 'Profile', href: '/edit-profile', icon: '👤' },
   ]
