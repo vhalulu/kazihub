@@ -77,7 +77,9 @@ export default function LoginPage() {
         loginEmail = profile.email
         console.log('Logging in with real email:', loginEmail)
       } else {
-        loginEmail = `${formattedPhone.replace('+', '')}@kazihub.app`
+        // ✅ ORIGINAL FORMAT: 254726334592@kazihub.app
+        const phoneDigits = formattedPhone.replace(/\+/g, '')
+        loginEmail = `${phoneDigits}@kazihub.app`
         console.log('Logging in with phone-based email:', loginEmail)
       }
 
