@@ -47,7 +47,7 @@ export default function DashboardPage() {
           profileData.user_type
 
         if (!isProfileComplete) {
-          router.push('/setup-profile')
+          router.push('/edit-profile')
           return
         }
 

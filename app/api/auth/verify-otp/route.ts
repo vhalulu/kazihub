@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
     console.log('=== VERIFY OTP STARTED ===')
     console.log('Phone:', phoneNumber)
     console.log('OTP:', otp)
-    console.log('User Type:', userType)
+    console.log('User Type received:', userType)
+    console.log('Full Name:', fullName)
 
     if (!phoneNumber || !otp) {
       return NextResponse.json(
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
         user_metadata: {
           full_name: fullName,
           phone_number: phoneNumber,
+          user_type: userType || 'client',  // ✅ Include user_type in metadata for trigger
         }
       })
 
@@ -100,13 +102,18 @@ export async function POST(request: NextRequest) {
       console.log('✅ User created:', authData.user.id)
 
       // Create profile (use admin client to bypass RLS)
+      console.log('Creating profile with user_type:', userType || 'client')
+      
+      // Use upsert to update profile if it already exists (Supabase might auto-create it)
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .insert({
+        .upsert({
           id: authData.user.id,
           full_name: fullName,
           phone_number: phoneNumber,
           user_type: userType || 'client',
+        }, {
+          onConflict: 'id'
         })
 
       if (profileError) {
@@ -121,6 +128,19 @@ export async function POST(request: NextRequest) {
         }
       } else {
         console.log('✅ Profile created')
+      }
+
+      // ✅ AUTO-LOGIN: Sign the user in after account creation
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: password
+      })
+
+      if (signInError) {
+        console.error('Auto sign-in error:', signInError)
+        // Don't fail - user can still login manually
+      } else {
+        console.log('✅ User auto-signed in')
       }
 
       return NextResponse.json({
