@@ -57,8 +57,6 @@ export default function BrowseTaskersPage() {
         .from('profiles')
         .select('*')
         .in('user_type', ['tasker', 'both'])
-        .eq('is_available', true)
-        .not('services_offered', 'is', null)
 
       if (filters.service) {
         query = query.contains('services_offered', [filters.service])
@@ -76,7 +74,8 @@ export default function BrowseTaskersPage() {
         query = query.eq('is_verified', true)
       }
 
-      query = query.order('rating', { ascending: false })
+      query = query.order('rating', { ascending: false, nullsFirst: false })
+                   .order('total_tasks_completed', { ascending: false, nullsFirst: false })
 
       const { data, error } = await query
 

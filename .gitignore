@@ -39,3 +39,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+"db_cluster-18-01-2026@19-54-00.backup" 
+register-mpesa-urls.js 

@@ -25,12 +25,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Find OTP in database
+    // Find OTP in database (only unused OTPs)
     const { data: otpRecord, error: otpError } = await supabase
       .from('otp_codes')
       .select('*')
       .eq('phone_number', phoneNumber)
       .eq('otp_code', otp)
+      .eq('is_used', false)  // ✅ Only get unused OTPs
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(1)
@@ -46,10 +47,10 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ OTP verified!')
 
-    // Delete used OTP
+    // Mark OTP as used instead of deleting
     await supabase
       .from('otp_codes')
-      .delete()
+      .update({ is_used: true })
       .eq('id', otpRecord.id)
 
     // Create user account if fullName and password provided

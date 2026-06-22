@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import LeaveReviewModal from '@/components/LeaveReviewModal'
+import PostTaskForm from '@/components/PostTaskForm'
 
 export default function MyTasksPage() {
   const router = useRouter()
@@ -18,6 +19,7 @@ export default function MyTasksPage() {
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [selectedReviewTasker, setSelectedReviewTasker] = useState<any>(null)
   const [reviewedTasks, setReviewedTasks] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<'tasks' | 'post'>('tasks')
 
   useEffect(() => {
     checkUserAccess()
@@ -136,6 +138,11 @@ export default function MyTasksPage() {
     setShowReviewModal(false)
   }
 
+  const handlePostSuccess = () => {
+    setActiveTab('tasks')
+    loadMyTasks()
+  }
+
   const handleCompleteTask = async (task: any) => {
     if (!confirm('Mark this task as completed? This will allow both you and the tasker to leave reviews.')) {
       return
@@ -179,22 +186,22 @@ export default function MyTasksPage() {
   // Helper function to get task display status
   const getTaskDisplayStatus = (task: any) => {
     // If task is cancelled or completed, show that
-    if (task.status === 'cancelled') return { label: '❌ Cancelled', color: 'bg-red-100 text-red-700' }
-    if (task.status === 'completed') return { label: '✅ Completed', color: 'bg-gray-100 text-gray-700' }
-    if (task.status === 'in_progress') return { label: '🔵 In Progress', color: 'bg-blue-100 text-blue-700' }
+    if (task.status === 'cancelled') return { label: 'Cancelled', color: 'bg-red-100 text-red-700' }
+    if (task.status === 'completed') return { label: 'Completed', color: 'bg-gray-100 text-gray-700' }
+    if (task.status === 'in_progress') return { label: 'In Progress', color: 'bg-blue-100 text-blue-700' }
     
     // If task is open but FULL
     if (task.status === 'open' && isTaskFull(task)) {
-      return { label: '🔒 FULL', color: 'bg-amber-100 text-amber-700' }
+      return { label: 'FULL', color: 'bg-amber-100 text-amber-700' }
     }
     
     // If task is open and accepting applications
-    return { label: '🟢 Open', color: 'bg-green-100 text-green-700' }
+    return { label: 'Open', color: 'bg-green-100 text-green-700' }
   }
 
   if (!userProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50/30 to-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -204,163 +211,209 @@ export default function MyTasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50/30 to-slate-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg"></div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              KaziHub
-            </span>
-          </Link>
-          <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 font-medium">
-            ← Back to Dashboard
-          </Link>
+    <div className="min-h-screen bg-gray-50">
+      
+      {/* Professional Navigation */}
+      <nav className="bg-[#2c3e50] border-b border-[#1a252f] sticky top-0 z-40 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/dashboard" className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">K</span>
+              </div>
+              <span className="text-xl font-bold text-white">KaziHub</span>
+            </Link>
+            <Link href="/dashboard" className="text-sm text-gray-300 hover:text-white transition">
+              ← Back to Dashboard
+            </Link>
+          </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-12">
-        <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Header with Tabs */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Tasks</h1>
+          <p className="text-gray-600 mb-6">Manage your tasks and post new ones</p>
           
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">My Tasks</h1>
-            <p className="text-gray-600">Manage your posted tasks and review applications</p>
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`px-6 py-3 font-semibold transition ${
+                activeTab === 'tasks'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Posted Tasks ({tasks.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('post')}
+              className={`px-6 py-3 font-semibold transition ${
+                activeTab === 'post'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Post Task
+            </button>
           </div>
+        </div>
 
-          {/* Tasks List */}
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your tasks...</p>
-            </div>
-          ) : tasks.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-100">
-              <div className="text-6xl mb-4">📝</div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">No tasks yet</h3>
-              <p className="text-gray-600 mb-6">Post your first task to get started!</p>
-              <button
-                onClick={() => router.push('/post-task')}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition"
-              >
-                Post a Task
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {tasks.map(task => {
-                const displayStatus = getTaskDisplayStatus(task)
-                const isFull = isTaskFull(task)
-                
-                return (
-                  <div key={task.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                    
-                    {/* Task Header */}
-                    <div className="p-6 border-b border-gray-200">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-2xl">{getCategoryIcon(task.category)}</span>
-                            <h3 className="text-2xl font-bold text-gray-900">{task.title}</h3>
-                            {task.is_urgent && (
-                              <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
-                                🚀 URGENT
-                              </span>
-                            )}
-                            {isFull && task.status === 'open' && (
-                              <span className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
-                                🔒 FULL
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-gray-600">{task.description}</p>
-                        </div>
-                        <div className="ml-4 flex flex-col gap-2">
-                          <div className={`px-3 py-1 rounded-full text-sm font-semibold ${displayStatus.color}`}>
-                            {displayStatus.label}
-                          </div>
-                          {task.status === 'open' && (
-                            <button
-                              onClick={() => router.push(`/edit-task/${task.id}`)}
-                              className="px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition"
-                            >
-                              ✏️ Edit
-                            </button>
+        {/* Tab Content */}
+        {activeTab === 'tasks' ? (
+          <>
+            {/* Loading State */}
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading your tasks...</p>
+              </div>
+            ) : tasks.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200">
+            <svg className="w-24 h-24 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">No tasks yet</h3>
+            <p className="text-gray-600 mb-6">Post your first task to get started!</p>
+            <button
+              onClick={() => setActiveTab('post')}
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+            >
+              Post a Task
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {tasks.map(task => {
+              const displayStatus = getTaskDisplayStatus(task)
+              const isFull = isTaskFull(task)
+              
+              return (
+                <div key={task.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  
+                  {/* Task Header */}
+                  <div className="p-6 bg-gray-50 border-b border-gray-200">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">{getCategoryIcon(task.category)}</span>
+                          <h3 className="text-xl font-bold text-gray-900">{task.title}</h3>
+                          {task.is_urgent && (
+                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">
+                              URGENT
+                            </span>
                           )}
-                          {task.status === 'in_progress' && (
-                            <button
-                              onClick={() => handleCompleteTask(task)}
-                              className="px-3 py-1 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition"
-                            >
-                              ✅ Mark Complete
-                            </button>
+                          {isFull && task.status === 'open' && (
+                            <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">
+                              FULL
+                            </span>
                           )}
                         </div>
+                        <p className="text-gray-600">{task.description}</p>
                       </div>
-
-                      <div className="grid grid-cols-3 gap-4 mt-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Budget</p>
-                          <p className="text-lg font-bold text-blue-600">Ksh {task.budget.toLocaleString()}</p>
+                      <div className="ml-4 flex flex-col gap-2">
+                        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${displayStatus.color}`}>
+                          {displayStatus.label}
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Location</p>
-                          <p className="text-sm font-semibold text-gray-900">📍 {task.town}, {task.county}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Applications</p>
-                          <p className="text-lg font-bold text-cyan-600">
-                            {task.applications?.length || 0}
-                            {task.max_applicants && ` / ${task.max_applicants}`}
-                          </p>
-                          {isFull && (
-                            <p className="text-xs text-amber-600 font-semibold">Maximum reached</p>
-                          )}
-                        </div>
+                        {task.status === 'open' && !task.applications?.some((app: any) => app.status === 'accepted') && (
+                          <button
+                            onClick={() => router.push(`/edit-task/${task.id}`)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {task.status === 'in_progress' && (
+                          <button
+                            onClick={() => handleCompleteTask(task)}
+                            className="px-3 py-1 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition"
+                          >
+                            Mark Complete
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    {/* Applications */}
-                    {task.applications && task.applications.length > 0 ? (
-                      <div className="p-6">
-                        <h4 className="text-lg font-bold text-gray-900 mb-4">
-                          Applications ({task.applications.length})
-                          {task.max_applicants && ` - Max: ${task.max_applicants}`}
-                        </h4>
-                        <div className="space-y-4">
-                          {task.applications.map((application: any) => (
-                            <ApplicationCard
-                              key={application.id}
-                              application={application}
-                              task={task}
-                              taskStatus={task.status}
-                              onUpdate={loadMyTasks}
-                              onReview={handleReviewTasker}
-                              hasReviewed={reviewedTasks.has(task.id)}
-                            />
-                          ))}
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Budget</p>
+                        <p className="text-lg font-bold text-green-600">Ksh {task.budget.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Location</p>
+                        <div className="flex items-center gap-1">
+                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          </svg>
+                          <p className="text-sm font-semibold text-gray-900">{task.town}, {task.county}</p>
                         </div>
                       </div>
-                    ) : (
-                      <div className="p-6 text-center">
-                        <p className="text-gray-500">
-                          {isFull 
-                            ? 'This task is now full and not accepting new applications.'
-                            : 'No applications yet. Share your task to get more visibility!'
-                          }
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Applications</p>
+                        <p className="text-lg font-bold text-blue-600">
+                          {task.applications?.length || 0}
+                          {task.max_applicants && ` / ${task.max_applicants}`}
                         </p>
+                        {isFull && (
+                          <p className="text-xs text-amber-600 font-semibold">Maximum reached</p>
+                        )}
                       </div>
-                    )}
-
+                    </div>
                   </div>
-                )
-              })}
-            </div>
-          )}
 
-        </div>
+                  {/* Applications */}
+                  {task.applications && task.applications.length > 0 ? (
+                    <div className="p-6">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4">
+                        Applications ({task.applications.length})
+                        {task.max_applicants && ` - Max: ${task.max_applicants}`}
+                      </h4>
+                      <div className="space-y-4">
+                        {task.applications.map((application: any) => (
+                          <ApplicationCard
+                            key={application.id}
+                            application={application}
+                            task={task}
+                            taskStatus={task.status}
+                            onUpdate={loadMyTasks}
+                            onReview={handleReviewTasker}
+                            hasReviewed={reviewedTasks.has(task.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center">
+                      <p className="text-gray-500">
+                        {isFull 
+                          ? 'This task is now full and not accepting new applications.'
+                          : 'No applications yet. Share your task to get more visibility!'
+                        }
+                      </p>
+                    </div>
+                  )}
+
+                </div>
+              )
+            })}
+          </div>
+        )}
+          </>
+        ) : (
+          // Tab 2: Post Task Form
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Post a New Task</h2>
+            <PostTaskForm 
+              userProfile={userProfile} 
+              onSuccess={handlePostSuccess}
+            />
+          </div>
+        )}
+
       </div>
 
       {/* Leave Review Modal */}
@@ -446,7 +499,7 @@ function ApplicationCard({ application, task, taskStatus, onUpdate, onReview, ha
 
   return (
     <>
-      <div className={`p-4 rounded-xl border-2 ${
+      <div className={`p-4 rounded-lg border-2 ${
         application.status === 'accepted' ? 'border-green-300 bg-green-50' :
         application.status === 'rejected' ? 'border-red-300 bg-red-50' :
         'border-gray-200 bg-gray-50'
@@ -454,7 +507,7 @@ function ApplicationCard({ application, task, taskStatus, onUpdate, onReview, ha
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4 flex-1">
             {/* Avatar */}
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg">
               {application.tasker?.full_name?.charAt(0).toUpperCase() || 'T'}
             </div>
 
@@ -469,12 +522,22 @@ function ApplicationCard({ application, task, taskStatus, onUpdate, onReview, ha
                 </div>
               </div>
 
-              <p className="text-sm text-gray-600 mb-2">
-                📍 {application.tasker?.town}, {application.tasker?.county}
+              <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  </svg>
+                  <span>{application.tasker?.town}, {application.tasker?.county}</span>
+                </div>
                 {application.tasker?.years_experience > 0 && (
-                  <span className="ml-3">💼 {application.tasker.years_experience} years exp.</span>
+                  <div className="flex items-center gap-1">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span>{application.tasker.years_experience} years exp.</span>
+                  </div>
                 )}
-              </p>
+              </div>
 
               <p className="text-sm text-gray-700 mb-3 bg-white p-3 rounded-lg border border-gray-200">
                 "{application.message}"
@@ -482,11 +545,11 @@ function ApplicationCard({ application, task, taskStatus, onUpdate, onReview, ha
 
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Proposed Price</p>
-                  <p className="text-xl font-bold text-blue-600">Ksh {application.proposed_price.toLocaleString()}</p>
+                  <p className="text-xs font-semibold text-gray-700">Proposed Price</p>
+                  <p className="text-xl font-bold text-green-600">Ksh {application.proposed_price.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Status</p>
+                  <p className="text-xs font-semibold text-gray-700">Status</p>
                   <p className={`text-sm font-semibold ${
                     application.status === 'accepted' ? 'text-green-600' :
                     application.status === 'rejected' ? 'text-red-600' :
@@ -540,7 +603,7 @@ function ApplicationCard({ application, task, taskStatus, onUpdate, onReview, ha
               ) : (
                 <button
                   onClick={() => onReview(task, application)}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                 >
                   ⭐ Leave Review
                 </button>
@@ -576,7 +639,7 @@ function RejectModal({ taskerName, onReject, onClose, isRejecting }: any) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+      <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-4">
           Decline Application from {taskerName}
         </h3>
@@ -607,7 +670,7 @@ function RejectModal({ taskerName, onReject, onClose, isRejecting }: any) {
             onChange={(e) => setCustomMessage(e.target.value)}
             placeholder="Write a kind, professional message..."
             rows={3}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
           />
         </div>
 
@@ -615,14 +678,14 @@ function RejectModal({ taskerName, onReject, onClose, isRejecting }: any) {
           <button
             onClick={onClose}
             disabled={isRejecting}
-            className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+            className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={() => onReject(customMessage)}
             disabled={isRejecting || (!customMessage.trim())}
-            className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
           >
             {isRejecting ? 'Sending...' : 'Send & Decline'}
           </button>

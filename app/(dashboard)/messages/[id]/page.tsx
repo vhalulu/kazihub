@@ -203,7 +203,7 @@ export default function ChatPage() {
 
   if (loading || !conversation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50/30 to-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading chat...</p>
@@ -213,28 +213,32 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50/30 to-slate-50 flex flex-col">
-      {/* Header */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      
+      {/* Professional Header */}
+      <nav className="bg-[#2c3e50] border-b border-[#1a252f] shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <Link href="/messages" className="text-gray-600 hover:text-gray-900">
-                ← Back
+              <Link href="/messages" className="text-gray-300 hover:text-white transition flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm">Back</span>
               </Link>
               <div className="flex items-center gap-3">
                 {conversation.otherUser.profile_photo_url ? (
                   <img
                     src={conversation.otherUser.profile_photo_url}
                     alt={conversation.otherUser.full_name}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-blue-500"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold border-2 border-blue-500">
                     {conversation.otherUser.full_name?.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-lg font-bold text-white">
                   {conversation.otherUser.full_name}
                 </h1>
               </div>
@@ -244,12 +248,14 @@ export default function ChatPage() {
       </nav>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-6 py-8">
-          <div className="max-w-4xl mx-auto space-y-4">
+      <div className="flex-1 overflow-y-auto bg-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="space-y-4">
             {messages.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-6xl mb-4">💬</div>
+                <svg className="w-24 h-24 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
                 <p className="text-gray-600">No messages yet. Start the conversation!</p>
               </div>
             ) : (
@@ -260,10 +266,14 @@ export default function ChatPage() {
                     <div className={`max-w-md ${isMine ? 'order-2' : 'order-1'}`}>
                       <div className={`rounded-2xl px-4 py-3 ${
                         isMine 
-                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white' 
-                          : 'bg-white text-gray-900 border border-gray-200'
+                          ? 'bg-[#007AFF]' 
+                          : 'bg-gray-200'
                       }`}>
-                        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                        <p className={`whitespace-pre-wrap break-words ${
+                          isMine ? '!text-white' : 'text-gray-900'
+                        }`}>
+                          {message.content}
+                        </p>
                       </div>
                       <p className={`text-xs text-gray-500 mt-1 ${isMine ? 'text-right' : 'text-left'}`}>
                         {formatTimestamp(message.created_at)}
@@ -279,27 +289,25 @@ export default function ChatPage() {
       </div>
 
       {/* Message Input */}
-      <div className="bg-white border-t border-gray-200 shadow-lg">
-        <div className="container mx-auto px-6 py-4">
-          <div className="max-w-4xl mx-auto">
-            <form onSubmit={handleSendMessage} className="flex gap-3">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                disabled={sending}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={sending || !newMessage.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {sending ? 'Sending...' : 'Send'}
-              </button>
-            </form>
-          </div>
+      <div className="bg-white border-t border-gray-300 shadow-lg">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <form onSubmit={handleSendMessage} className="flex gap-3">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type a message..."
+              disabled={sending}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={sending || !newMessage.trim()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? 'Sending...' : 'Send'}
+            </button>
+          </form>
         </div>
       </div>
     </div>
