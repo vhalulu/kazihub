@@ -43,7 +43,7 @@ export default function MpesaPaymentModal({
     setLoading(true);
 
     try {
-      const res = await fetch('/api/mpesa/stk-push', {
+      const res = await fetch('/api/payments/stk-push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, amount, type }),
@@ -84,7 +84,7 @@ export default function MpesaPaymentModal({
       attempts++;
 
       try {
-        const res = await fetch(`/api/mpesa/status?transactionId=${transactionId}`);
+        const res = await fetch(`/api/payments/status?transactionId=${transactionId}`);
         const data = await res.json();
 
         if (data.transaction?.status === 'completed') {
