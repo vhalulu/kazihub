@@ -7,6 +7,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Safaricom validation - respond to GET requests
+export async function GET(req: NextRequest) {
+  console.log('🔔 Safaricom validation GET request received');
+  return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -34,7 +40,6 @@ export async function POST(req: NextRequest) {
     console.log('Found transaction:', transaction.id, 'type:', transaction.transaction_type);
 
     if (ResultCode === 0) {
-      // Payment successful - extract metadata
       const items = CallbackMetadata?.Item || [];
       const getMeta = (name: string) => items.find((i: any) => i.Name === name)?.Value;
 
