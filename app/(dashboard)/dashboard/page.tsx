@@ -1,7 +1,7 @@
 'use client'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import NotificationBell from '@/components/NotificationBell'
-import PWAInstallBanner from '@/components/PWAInstallBanner'
+import PWAInstallBanner, { PWAInstallButton } from '@/components/PWAInstallBanner'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -106,46 +106,18 @@ export default function DashboardPage() {
 
         console.log('✅ Available tasks after filtering:', availableTasks.length)
 
-        // Smart scoring for featured tasks
         const scoredTasks = availableTasks.map(task => {
           let score = 0
-          
-          // Location: Same county = +100 points
-          if (task.county === userCounty) {
-            score += 100
-          }
-          
-          // Urgent tasks: +80 points
-          if (task.is_urgent) {
-            score += 80
-          }
-          
-          // Budget score: higher budget = more points (budget / 100, max 50)
-          if (task.budget) {
-            score += Math.min(task.budget / 100, 50)
-          }
-          
-          // Recent posts: newer = higher score (max 20 points for today)
+          if (task.county === userCounty) score += 100
+          if (task.is_urgent) score += 80
+          if (task.budget) score += Math.min(task.budget / 100, 50)
           const daysOld = Math.floor((Date.now() - new Date(task.created_at).getTime()) / (1000 * 60 * 60 * 24))
           score += Math.max(0, 20 - daysOld)
-          
           return { ...task, score }
         })
         
-        // Sort by score and take top 6
-        const featured = scoredTasks
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 6)
-
+        const featured = scoredTasks.sort((a, b) => b.score - a.score).slice(0, 6)
         console.log('🌟 Featured tasks selected:', featured.length)
-        console.log('Featured tasks details:', featured.map(t => ({ 
-          title: t.title, 
-          score: t.score, 
-          county: t.county, 
-          budget: t.budget,
-          urgent: t.is_urgent 
-        })))
-
         setFeaturedTasks(featured)
       } else {
         console.log('⚠️ No tasks found in database')
@@ -176,12 +148,11 @@ export default function DashboardPage() {
     try {
       console.log('Loading featured taskers for county:', userCounty)
       
-      // Load ALL taskers who are taskers/both - no restrictive filters
       const { data: taskers, error } = await supabase
         .from('profiles')
         .select('*')
         .in('user_type', ['tasker', 'both'])
-        .limit(50) // Get more to filter and sort
+        .limit(50)
 
       console.log('Taskers query result:', { count: taskers?.length, error })
 
@@ -191,56 +162,19 @@ export default function DashboardPage() {
       }
 
       if (taskers && taskers.length > 0) {
-        // Smart scoring - prioritize verified, available, with photo, and high rating
         const scoredTaskers = taskers.map(tasker => {
           let score = 0
-          
-          // HIGHEST PRIORITY: Verified (+50 points)
-          if (tasker.is_verified) {
-            score += 50
-          }
-          
-          // Available for work (+40 points)
-          if (tasker.is_available) {
-            score += 40
-          }
-          
-          // Has profile photo (+30 points)
-          if (tasker.profile_photo_url) {
-            score += 30
-          }
-          
-          // Rating score: rating * 20 (max 100 points for 5.0 rating)
-          if (tasker.rating && tasker.rating > 0) {
-            score += tasker.rating * 20
-          }
-          
-          // Location bonus: Same county = +25 points
-          if (tasker.county === userCounty) {
-            score += 25
-          }
-          
-          // Has hourly rate set (+20 points - profile completeness)
-          if (tasker.hourly_rate) {
-            score += 20
-          }
-          
-          // Experience bonus: 1 point per completed job (max 15)
-          if (tasker.jobs_completed) {
-            score += Math.min(tasker.jobs_completed, 15)
-          }
-          
+          if (tasker.is_verified) score += 50
+          if (tasker.is_available) score += 40
+          if (tasker.profile_photo_url) score += 30
+          if (tasker.rating && tasker.rating > 0) score += tasker.rating * 20
+          if (tasker.county === userCounty) score += 25
+          if (tasker.hourly_rate) score += 20
+          if (tasker.jobs_completed) score += Math.min(tasker.jobs_completed, 15)
           return { ...tasker, score }
         })
         
-        // Sort by score (highest first) and take top 6
-        const featured = scoredTaskers
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 6)
-        
-        console.log('Featured taskers selected:', featured.length, 
-          featured.map(t => ({ name: t.full_name, score: t.score, verified: t.is_verified, available: t.is_available, hasPhoto: !!t.profile_photo_url, rating: t.rating })))
-        
+        const featured = scoredTaskers.sort((a, b) => b.score - a.score).slice(0, 6)
         setFeaturedTaskers(featured)
       }
     } catch (error) {
@@ -301,9 +235,7 @@ export default function DashboardPage() {
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">K</span>
               </div>
-              <span className="text-xl font-bold text-white">
-                KaziHub
-              </span>
+              <span className="text-xl font-bold text-white">KaziHub</span>
             </Link>
 
             <div className="flex items-center gap-6">
@@ -342,6 +274,9 @@ export default function DashboardPage() {
                 <span className="text-gray-300">Welcome, </span>
                 <span className="font-semibold text-white">{profile.full_name?.split(' ')[0]}</span>
               </div>
+
+              {/* PWA Install Button */}
+              <PWAInstallButton />
 
               <button
                 onClick={handleSignOut}
@@ -504,17 +439,13 @@ export default function DashboardPage() {
                 <p className="text-gray-600">Top-rated professionals ready to help</p>
               </div>
 
-              {/* Tasker Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {featuredTaskers.length === 0 ? (
                   <div className="col-span-2 bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200">
                     <div className="text-6xl mb-4">👨‍🔧</div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">No Featured Taskers Yet</h3>
                     <p className="text-gray-600 mb-4">Be the first to discover talented professionals in your area!</p>
-                    <Link
-                      href="/browse-taskers"
-                      className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                    >
+                    <Link href="/browse-taskers" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
                       Browse All Taskers
                     </Link>
                   </div>
@@ -526,74 +457,48 @@ export default function DashboardPage() {
                     className="group bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200"
                   >
                     <div className="flex items-start gap-4">
-                      {/* Tasker Avatar */}
                       <div className="flex-shrink-0">
                         {tasker.profile_photo_url ? (
-                          <img 
-                            src={tasker.profile_photo_url} 
-                            alt={tasker.full_name}
-                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                          />
+                          <img src={tasker.profile_photo_url} alt={tasker.full_name} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-bold">
                             {tasker.full_name?.charAt(0) || 'T'}
                           </div>
                         )}
                       </div>
-
-                      {/* Tasker Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition truncate">
-                            {tasker.full_name}
-                          </h3>
+                          <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition truncate">{tasker.full_name}</h3>
                           {tasker.is_verified && (
                             <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
                           )}
                         </div>
-                        
                         <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          </svg>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
                           <span className="truncate">{tasker.town}, {tasker.county}</span>
                         </div>
-
-                        {/* Services Offered */}
                         {tasker.services_offered && tasker.services_offered.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-2">
                             {tasker.services_offered.slice(0, 3).map((service: string) => (
-                              <span 
-                                key={service}
-                                className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded"
-                              >
+                              <span key={service} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded">
                                 {service.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </span>
                             ))}
                             {tasker.services_offered.length > 3 && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded">
-                                +{tasker.services_offered.length - 3} more
-                              </span>
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded">+{tasker.services_offered.length - 3} more</span>
                             )}
                           </div>
                         )}
-
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-1">
                             <span className="text-yellow-500">⭐</span>
                             <span className="font-semibold text-gray-900">{tasker.rating || 'New'}</span>
-                            {tasker.jobs_completed > 0 && (
-                              <span className="text-gray-500">({tasker.jobs_completed} jobs)</span>
-                            )}
+                            {tasker.jobs_completed > 0 && <span className="text-gray-500">({tasker.jobs_completed} jobs)</span>}
                           </div>
                           <div className="text-blue-600 font-semibold">
-                            {tasker.hourly_rate ? (
-                              `Ksh ${tasker.hourly_rate.toLocaleString()}/hr`
-                            ) : (
-                              <span className="text-gray-500 text-xs">Rate TBD</span>
-                            )}
+                            {tasker.hourly_rate ? `Ksh ${tasker.hourly_rate.toLocaleString()}/hr` : <span className="text-gray-500 text-xs">Rate TBD</span>}
                           </div>
                         </div>
                       </div>
@@ -603,83 +508,52 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Browse More Button */}
-              <Link
-                href="/browse-taskers"
-                className="block w-full py-4 bg-gray-700 text-white rounded-lg font-bold text-center hover:bg-gray-800 transition shadow-sm"
-              >
+              <Link href="/browse-taskers" className="block w-full py-4 bg-gray-700 text-white rounded-lg font-bold text-center hover:bg-gray-800 transition shadow-sm">
                 Browse More Taskers →
               </Link>
             </div>
           ) : (
-            // FOR TASKERS - Featured Tasks Center Column
             <div className="lg:col-span-2">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">🔥 Featured Tasks</h2>
                 <p className="text-gray-600">Top opportunities matching your location</p>
               </div>
 
-              {/* Task Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {featuredTasks.length === 0 ? (
                   <div className="col-span-2 bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200">
                     <div className="text-6xl mb-4">📋</div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">No Tasks Available</h3>
                     <p className="text-gray-600 mb-4">Check back soon for new opportunities!</p>
-                    <Link
-                      href="/browse-tasks"
-                      className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                    >
-                      Browse All Tasks
-                    </Link>
+                    <Link href="/browse-tasks" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Browse All Tasks</Link>
                   </div>
                 ) : (
                   featuredTasks.map((task: any) => (
-                  <Link
-                    key={task.id}
-                    href={`/browse-tasks`}
-                    className="group bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200"
-                  >
+                  <Link key={task.id} href={`/browse-tasks`} className="group bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200">
                     <div className="flex items-start gap-4">
-                      {/* Category Icon */}
                       <div className="flex-shrink-0">
                         <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-2xl">
                           {getCategoryIcon(task.category)}
                         </div>
                       </div>
-
-                      {/* Task Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition line-clamp-1">
-                            {task.title}
-                          </h3>
-                          {task.is_urgent && (
-                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full flex-shrink-0">
-                              URGENT
-                            </span>
-                          )}
+                          <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition line-clamp-1">{task.title}</h3>
+                          {task.is_urgent && <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full flex-shrink-0">URGENT</span>}
                         </div>
-                        
                         <p className="text-sm text-gray-600 line-clamp-2 mb-3">{task.description}</p>
-
                         <div className="flex items-center gap-3 text-sm mb-2">
                           <div className="flex items-center gap-1 text-gray-600">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            </svg>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
                             <span className="truncate">{task.town}, {task.county}</span>
                           </div>
                         </div>
-
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-1">
                             <span className="text-gray-500">Posted by:</span>
                             <span className="font-semibold text-gray-900">{task.client?.full_name}</span>
                           </div>
-                          <div className="text-green-600 font-bold text-lg">
-                            Ksh {task.budget?.toLocaleString()}
-                          </div>
+                          <div className="text-green-600 font-bold text-lg">Ksh {task.budget?.toLocaleString()}</div>
                         </div>
                       </div>
                     </div>
@@ -688,15 +562,10 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Browse More Button */}
-              <Link
-                href="/browse-tasks"
-                className="block w-full py-4 bg-gray-700 text-white rounded-lg font-bold text-center hover:bg-gray-800 transition shadow-sm"
-              >
+              <Link href="/browse-tasks" className="block w-full py-4 bg-gray-700 text-white rounded-lg font-bold text-center hover:bg-gray-800 transition shadow-sm">
                 Browse More Tasks →
               </Link>
             </div>
-            
           )}
 
           {/* Right Column - My Tasks Widget (FOR CLIENTS ONLY) */}
@@ -709,18 +578,10 @@ export default function DashboardPage() {
                   </svg>
                   <h3 className="text-lg font-bold text-gray-900">My Tasks</h3>
                 </div>
-                
-                <p className="text-sm text-gray-600 mb-4">
-                  Manage your tasks and review applications
-                </p>
-
-                <Link
-                  href="/my-tasks"
-                  className="block w-full py-3 bg-gray-700 text-white rounded-lg font-semibold text-center hover:bg-gray-800 transition mb-3"
-                >
+                <p className="text-sm text-gray-600 mb-4">Manage your tasks and review applications</p>
+                <Link href="/my-tasks" className="block w-full py-3 bg-gray-700 text-white rounded-lg font-semibold text-center hover:bg-gray-800 transition mb-3">
                   View All Tasks →
                 </Link>
-
                 <div className="border-t border-gray-200 pt-4">
                   <div className="text-sm text-gray-600">
                     <div className="flex justify-between items-center mb-2">
@@ -747,18 +608,10 @@ export default function DashboardPage() {
                   </svg>
                   <h3 className="text-lg font-bold text-gray-900">My Applications</h3>
                 </div>
-                
-                <p className="text-sm text-gray-600 mb-4">
-                  Track your task applications
-                </p>
-
-                <Link
-                  href="/my-applications"
-                  className="block w-full py-3 bg-gray-700 text-white rounded-lg font-semibold text-center hover:bg-gray-800 transition mb-3"
-                >
+                <p className="text-sm text-gray-600 mb-4">Track your task applications</p>
+                <Link href="/my-applications" className="block w-full py-3 bg-gray-700 text-white rounded-lg font-semibold text-center hover:bg-gray-800 transition mb-3">
                   View All Applications →
                 </Link>
-
                 <div className="border-t border-gray-200 pt-4">
                   <div className="text-sm text-gray-600">
                     <div className="flex justify-between items-center mb-2">

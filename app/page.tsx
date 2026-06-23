@@ -13,16 +13,16 @@ export default function Home() {
               KaziHub
             </span>
           </div>
-          <div className="flex gap-6 items-center">
-            <Link href="#how-it-works" className="text-gray-700 font-semibold hover:text-blue-600 transition-colors">
+          <div className="flex gap-4 items-center">
+            <Link href="#how-it-works" className="hidden md:block text-gray-700 font-semibold hover:text-blue-600 transition-colors">
               How It Works
             </Link>
-            <Link href="/login" className="text-gray-700 font-semibold hover:text-blue-600 transition-colors">
+            <Link href="/login" className="text-gray-700 font-semibold hover:text-blue-600 transition-colors text-sm md:text-base">
               Log In
             </Link>
             <Link
               href="/signup"
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all"
+              className="px-4 py-2 md:px-6 md:py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold text-sm md:text-base hover:shadow-lg hover:shadow-blue-500/30 transition-all"
             >
               Sign Up
             </Link>
@@ -30,24 +30,24 @@ export default function Home() {
         </div>
       </nav>
 
-      <div className="container mx-auto px-6 py-20">
+      <div className="container mx-auto px-6 py-12 md:py-20">
         <div className="max-w-6xl mx-auto">
 
           {/* Hero Section */}
-          <div className="text-center mb-20 space-y-8">
+          <div className="text-center mb-16 md:mb-20 space-y-6 md:space-y-8">
             <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold shadow-sm">
               🇰🇪 Built for Kenya
             </span>
 
-            <h1 className="text-6xl md:text-7xl font-bold leading-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold leading-tight">
               <span className="bg-gradient-to-r from-gray-900 via-blue-900 to-cyan-900 bg-clip-text text-transparent">
-                Kenya’s Most Trusted Marketplace
+                Kenya's Most Trusted Marketplace
               </span>
               <br />
               <span className="text-gray-800">for Getting Tasks Done</span>
             </h1>
 
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed space-y-3">
+            <p className="text-base md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed space-y-3">
               <span className="block">
                 KaziHub connects you with verified local taskers for cleaning, repairs, errands, and more — paid securely with M-Pesa after the work is done.
               </span>
@@ -56,16 +56,16 @@ export default function Home() {
               </span>
             </p>
 
-            <div className="flex gap-4 justify-center pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 md:pt-6">
               <Link
                 href="/signup"
-                className="px-10 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold text-lg shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transform hover:-translate-y-1 transition-all duration-300"
+                className="px-6 py-3 md:px-10 md:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold text-base md:text-lg shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transform hover:-translate-y-1 transition-all duration-300"
               >
                 Post a Task (Hire Help) →
               </Link>
               <Link
                 href="/signup"
-                className="px-10 py-4 bg-white text-gray-700 rounded-xl font-semibold text-lg border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
+                className="px-6 py-3 md:px-10 md:py-4 bg-white text-gray-700 rounded-xl font-semibold text-base md:text-lg border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
               >
                 Become a Tasker (Earn Money)
               </Link>
@@ -73,13 +73,13 @@ export default function Home() {
           </div>
 
           {/* How It Works */}
-          <section id="how-it-works" className="mb-24">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-12">
+          <section id="how-it-works" className="mb-16 md:mb-24">
+            <h2 className="text-2xl md:text-4xl font-bold text-center text-gray-900 mb-8 md:mb-12">
               How It Works
             </h2>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 text-center">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+              <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center text-2xl font-bold">
                   1
                 </div>
@@ -89,7 +89,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 text-center">
+              <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 bg-cyan-100 text-cyan-700 rounded-xl flex items-center justify-center text-2xl font-bold">
                   2
                 </div>
@@ -99,7 +99,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 text-center">
+              <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center text-2xl font-bold">
                   3
                 </div>
@@ -123,7 +123,7 @@ export default function Home() {
               <span className="font-bold text-gray-800">KaziHub</span>
             </div>
 
-            <div className="flex gap-6 text-sm text-gray-600 font-semibold">
+            <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-sm text-gray-600 font-semibold">
               <Link href="#" className="hover:text-blue-600">About</Link>
               <Link href="#" className="hover:text-blue-600">Safety & Trust</Link>
               <Link href="#" className="hover:text-blue-600">Terms</Link>
