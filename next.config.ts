@@ -4,6 +4,8 @@ import withPWAInit from "@ducanh2912/next-pwa";
 const withPWA = withPWAInit({
   dest: "public",
   register: true,
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
 });
 
 const nextConfig: NextConfig = {
@@ -16,7 +18,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  turbopack: {},
 };
 
 export default withPWA(nextConfig);
