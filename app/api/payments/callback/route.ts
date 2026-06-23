@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     const { Body } = body;
     const { stkCallback } = Body;
-    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = stkCallback;
+    const { MerchantRequestID, CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = stkCallback;
 
     // Find the transaction by CheckoutRequestID
     const { data: transaction, error: findError } = await supabase
@@ -30,25 +30,8 @@ export async function POST(req: NextRequest) {
       const getMeta = (name: string) => items.find((i: any) => i.Name === name)?.Value;
 
       const mpesaReceiptNumber = getMeta('MpesaReceiptNumber');
-      const paidAmount = parseFloat(getMeta('Amount') || '0');
+      const amount = getMeta('Amount');
       const phoneNumber = getMeta('PhoneNumber');
-
-      // ✅ Validate amount - reject if less than expected
-      if (paidAmount < transaction.total_amount) {
-        console.error(`Amount mismatch: expected ${transaction.total_amount}, got ${paidAmount}`);
-        await supabase
-          .from('transactions')
-          .update({ 
-            status: 'failed',
-            mpesa_receipt_number: mpesaReceiptNumber,
-            phone_number: String(phoneNumber),
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', transaction.id);
-
-        // Always return success to Safaricom even on amount mismatch
-        return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-      }
 
       // Update transaction as completed
       await supabase

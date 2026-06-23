@@ -263,7 +263,7 @@ export default function ApplyModal({ task, isOpen, onClose, onSuccess, userProfi
               {/* Price */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center mb-6">
                 <p className="text-sm text-blue-700 font-medium">Monthly subscription</p>
-                <p className="text-3xl font-bold text-blue-700">KSh 350<span className="text-base font-normal">/month</span></p>
+                <p className="text-3xl font-bold text-blue-700">KSh 50<span className="text-base font-normal">/month</span></p>
               </div>
 
               {/* Actions */}
@@ -291,10 +291,10 @@ export default function ApplyModal({ task, isOpen, onClose, onSuccess, userProfi
             isOpen={showPaymentModal}
             onClose={() => setShowPaymentModal(false)}
             onSuccess={handleSubscriptionSuccess}
-            amount={350}
+            amount={50}
             type="subscription"
             title="KaziHub Pro Subscription"
-            description="Pay KSh 350 via MPesa to unlock unlimited applications for 30 days."
+            description="Pay KSh 50 via MPesa to unlock unlimited applications for 30 days."
             defaultPhone={userProfile.phone_number || ''}
           />
         )}
