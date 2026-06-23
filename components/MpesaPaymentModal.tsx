@@ -114,7 +114,7 @@ export default function MpesaPaymentModal({
           setTimeout(() => {
             onSuccess()
             onClose()
-          }, 1500)
+          }, 3000)
           return
         }
 
