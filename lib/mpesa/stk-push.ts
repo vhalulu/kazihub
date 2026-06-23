@@ -78,6 +78,7 @@ export async function initiateStkPush(params: StkPushParams): Promise<StkPushRes
     AccountReference: params.accountReference,
     TransactionDesc: params.transactionDesc,
   };
+  console.log('🚀 STK Push body:', JSON.stringify(body, null, 2));
 
   const res = await fetch(`${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`, {
     method: 'POST',
