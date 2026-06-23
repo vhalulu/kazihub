@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Use service role client for callbacks - no auth cookies needed
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const supabase = await createClient();
 
-    console.log('MPesa callback received:', JSON.stringify(body, null, 2));
+    console.log('🔔 MPesa callback received:', JSON.stringify(body, null, 2));
 
     const { Body } = body;
     const { stkCallback } = Body;
-    const { MerchantRequestID, CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = stkCallback;
+    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = stkCallback;
+
+    console.log('CheckoutRequestID:', CheckoutRequestID, 'ResultCode:', ResultCode);
 
     // Find the transaction by CheckoutRequestID
     const { data: transaction, error: findError } = await supabase
@@ -20,9 +27,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (findError || !transaction) {
-      console.error('Transaction not found for CheckoutRequestID:', CheckoutRequestID);
+      console.error('Transaction not found for CheckoutRequestID:', CheckoutRequestID, findError);
       return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
     }
+
+    console.log('Found transaction:', transaction.id, 'type:', transaction.transaction_type);
 
     if (ResultCode === 0) {
       // Payment successful - extract metadata
@@ -30,8 +39,10 @@ export async function POST(req: NextRequest) {
       const getMeta = (name: string) => items.find((i: any) => i.Name === name)?.Value;
 
       const mpesaReceiptNumber = getMeta('MpesaReceiptNumber');
-      const amount = getMeta('Amount');
+      const paidAmount = parseFloat(getMeta('Amount') || '0');
       const phoneNumber = getMeta('PhoneNumber');
+
+      console.log('Payment confirmed:', mpesaReceiptNumber, 'Amount:', paidAmount);
 
       // Update transaction as completed
       await supabase
@@ -44,13 +55,13 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', transaction.id);
 
-      // Handle post-payment logic based on transaction type
+      // Handle subscription
       if (transaction.transaction_type === 'subscription') {
         const now = new Date();
         const expiresAt = new Date(now);
         expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-        await supabase.from('subscriptions').insert({
+        const { error: subError } = await supabase.from('subscriptions').insert({
           user_id: transaction.payer_id,
           subscription_type: 'tasker_pro',
           billing_cycle: 'monthly',
@@ -61,11 +72,16 @@ export async function POST(req: NextRequest) {
           next_billing_date: expiresAt.toISOString(),
         });
 
-        // Mark profile as pro tasker
-        await supabase
+        if (subError) console.error('Subscription insert error:', subError);
+
+        const { error: profileError } = await supabase
           .from('profiles')
           .update({ is_pro_tasker: true })
           .eq('id', transaction.payer_id);
+
+        if (profileError) console.error('Profile update error:', profileError);
+
+        console.log('✅ Subscription activated for user:', transaction.payer_id);
       }
 
       if (transaction.transaction_type === 'verification') {
@@ -78,7 +94,6 @@ export async function POST(req: NextRequest) {
       }
 
     } else {
-      // Payment failed or cancelled
       await supabase
         .from('transactions')
         .update({ status: 'failed' })
@@ -87,12 +102,10 @@ export async function POST(req: NextRequest) {
       console.log(`Payment failed for transaction ${transaction.id}: ${ResultDesc}`);
     }
 
-    // Always return success to Safaricom
     return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
 
   } catch (error) {
     console.error('MPesa callback error:', error);
-    // Still return 200 to Safaricom so they don't retry
     return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
   }
 }
