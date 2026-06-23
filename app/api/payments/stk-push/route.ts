@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initiateStkPush } from '@/lib/mpesa/stk-push';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+
+// Service role client for DB writes - bypasses RLS
+const serviceSupabase = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +25,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Valid payment types
     const validTypes = ['subscription', 'verification', 'task_payment'];
     if (!validTypes.includes(type)) {
       return NextResponse.json({ error: 'Invalid payment type' }, { status: 400 });
@@ -31,8 +37,8 @@ export async function POST(req: NextRequest) {
       ? 'KaziHub Identity Verification'
       : 'KaziHub Task Payment';
 
-    // Create a pending transaction record
-    const { data: transaction, error: txError } = await supabase
+    // Create pending transaction using service role to bypass RLS
+    const { data: transaction, error: txError } = await serviceSupabase
       .from('transactions')
       .insert({
         payer_id: user.id,
@@ -58,9 +64,10 @@ export async function POST(req: NextRequest) {
       transactionDesc,
     });
 
+    console.log('STK Response:', JSON.stringify(stkResponse));
+
     if (stkResponse.ResponseCode !== '0') {
-      // Update transaction as failed
-      await supabase
+      await serviceSupabase
         .from('transactions')
         .update({ status: 'failed' })
         .eq('id', transaction.id);
@@ -71,11 +78,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Store the CheckoutRequestID so we can match the callback
-    await supabase
+    // Save CheckoutRequestID using service role
+    const { error: updateError } = await serviceSupabase
       .from('transactions')
       .update({ mpesa_transaction_id: stkResponse.CheckoutRequestID })
       .eq('id', transaction.id);
+
+    if (updateError) {
+      console.error('Failed to save CheckoutRequestID:', updateError);
+    } else {
+      console.log('✅ CheckoutRequestID saved:', stkResponse.CheckoutRequestID);
+    }
 
     return NextResponse.json({
       success: true,
