@@ -159,7 +159,7 @@ export default function DashboardPage() {
   const loadTaskerApplications = async (taskerId: string) => {
     try {
       const { data } = await supabase
-        .from('applications')
+        .from('task_applications')
         .select('id, status, created_at')
         .eq('tasker_id', taskerId)
         .order('created_at', { ascending: false })
