@@ -7,7 +7,6 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-// Shared state via module-level variable
 let globalDeferredPrompt: BeforeInstallPromptEvent | null = null
 let globalSetters: Array<(v: BeforeInstallPromptEvent | null) => void> = []
 
@@ -16,45 +15,101 @@ function setGlobalPrompt(prompt: BeforeInstallPromptEvent | null) {
   globalSetters.forEach(setter => setter(prompt))
 }
 
-// Install button for navbar
+// Install button for navbar - always visible on mobile
 export function PWAInstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(globalDeferredPrompt)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
+  const [showIOSModal, setShowIOSModal] = useState(false)
 
   useEffect(() => {
     setIsStandalone(window.matchMedia('(display-mode: standalone)').matches)
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent))
+    
     globalSetters.push(setDeferredPrompt)
+
+    const handler = (e: Event) => {
+      e.preventDefault()
+      const prompt = e as BeforeInstallPromptEvent
+      setDeferredPrompt(prompt)
+      setGlobalPrompt(prompt)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+
     return () => {
       globalSetters = globalSetters.filter(s => s !== setDeferredPrompt)
+      window.removeEventListener('beforeinstallprompt', handler)
     }
   }, [])
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return
+    if (isIOS) {
+      setShowIOSModal(true)
+      return
+    }
+    if (!deferredPrompt) {
+      // Fallback — show manual instructions
+      setShowIOSModal(true)
+      return
+    }
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') {
-      setGlobalPrompt(null)
-    }
+    if (outcome === 'accepted') setGlobalPrompt(null)
   }
 
-  if (isStandalone || !deferredPrompt) return null
+  if (isStandalone) return null
 
   return (
-    <button
-      onClick={handleInstall}
-      className="text-sm text-gray-300 hover:text-white transition font-medium px-3 py-2 rounded-md hover:bg-[#34495e] flex items-center gap-2"
-      title="Install KaziHub App"
-    >
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-      </svg>
-      <span className="hidden sm:inline">Install App</span>
-    </button>
+    <>
+      <button
+        onClick={handleInstall}
+        className="text-sm text-gray-300 hover:text-white transition font-medium px-3 py-2 rounded-md hover:bg-[#34495e] flex items-center gap-2"
+        title="Install KaziHub App"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span className="hidden sm:inline">Install App</span>
+      </button>
+
+      {/* iOS / Manual install instructions modal */}
+      {showIOSModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-3">📱 Install KaziHub</h3>
+            {isIOS ? (
+              <div className="text-sm text-gray-600 space-y-3">
+                <p>To install on iPhone/iPad:</p>
+                <ol className="list-decimal list-inside space-y-2">
+                  <li>Tap the <strong>Share</strong> button <span>⎋</span> at the bottom of Safari</li>
+                  <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                  <li>Tap <strong>Add</strong> to confirm</li>
+                </ol>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600 space-y-3">
+                <p>To install on Android:</p>
+                <ol className="list-decimal list-inside space-y-2">
+                  <li>Tap the <strong>three dots menu ⋮</strong> in Chrome</li>
+                  <li>Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></li>
+                  <li>Tap <strong>Add</strong> to confirm</li>
+                </ol>
+              </div>
+            )}
+            <button
+              onClick={() => setShowIOSModal(false)}
+              className="mt-4 w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
-// Main banner component
+// Bottom banner
 export default function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showBanner, setShowBanner] = useState(false)
@@ -64,7 +119,6 @@ export default function PWAInstallBanner() {
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches
     setIsStandalone(standalone)
-
     if (standalone) return
 
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -85,14 +139,9 @@ export default function PWAInstallBanner() {
     }
 
     window.addEventListener('beforeinstallprompt', handler)
+    if (iOS) setTimeout(() => setShowBanner(true), 5000)
 
-    if (iOS) {
-      setTimeout(() => setShowBanner(true), 5000)
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler)
-    }
+    return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   const handleInstall = async () => {
@@ -102,9 +151,7 @@ export default function PWAInstallBanner() {
     setDeferredPrompt(null)
     setGlobalPrompt(null)
     setShowBanner(false)
-    if (outcome === 'dismissed') {
-      localStorage.setItem('pwa-install-dismissed', Date.now().toString())
-    }
+    if (outcome === 'dismissed') localStorage.setItem('pwa-install-dismissed', Date.now().toString())
   }
 
   const handleDismiss = () => {
