@@ -1,115 +1,87 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { confirmMpesaPayment } from '@/lib/mpesa-confirm';
+import { queryStkPush } from '@/lib/mpesa/stk-push';
 
-// Service role client (bypasses RLS)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET() {
-  console.log('🔔 MPesa validation GET received');
-  return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    console.log(
-      '🔔 MPesa callback received:',
-      JSON.stringify(body, null, 2)
-    );
+    console.log('🔔 MPesa Callback:', JSON.stringify(body, null, 2));
 
-    const { Body } = body;
-    const { stkCallback } = Body;
+    const stkCallback = body?.Body?.stkCallback;
+    const CheckoutRequestID = stkCallback?.CheckoutRequestID;
+    const ResultCode = stkCallback?.ResultCode;
 
-    const {
-      CheckoutRequestID,
-      ResultCode,
-      ResultDesc,
-    } = stkCallback;
+    if (!CheckoutRequestID) {
+      return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
+    }
 
-    console.log(
-      '📌 CheckoutRequestID:',
-      CheckoutRequestID,
-      'ResultCode:',
-      ResultCode
-    );
-
-    // Find transaction
-    const { data: transaction, error: findError } = await supabase
+    // 1. Find transaction
+    const { data: transaction } = await supabase
       .from('transactions')
       .select('*')
       .eq('mpesa_transaction_id', CheckoutRequestID)
       .single();
 
-    if (findError || !transaction) {
-      console.error(
-        '❌ Transaction not found:',
-        CheckoutRequestID,
-        findError
-      );
-
-      return NextResponse.json({
-        ResultCode: 0,
-        ResultDesc: 'Accepted',
-      });
+    if (!transaction) {
+      console.log('❌ Transaction not found');
+      return NextResponse.json({ ResultCode: 0 });
     }
 
-    console.log('✅ Transaction found:', transaction.id);
+    // 2. Mark as processing
+    await supabase
+      .from('transactions')
+      .update({
+        status: 'processing',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', transaction.id);
 
-    // SUCCESS CALLBACK
-    if (ResultCode === 0) {
-      // Mark as completed (WITHOUT receipt)
-      const { error: updateError } = await supabase
+    // 3. IMMEDIATE STK QUERY
+    const query = await queryStkPush(CheckoutRequestID);
+
+    const resultParams =
+      query?.Result?.ResultParameters?.ResultParameter || [];
+
+    const get = (key: string) =>
+      resultParams.find((i: any) => i.Key === key)?.Value;
+
+    const receipt = get('MpesaReceiptNumber');
+
+    if (receipt) {
+      // SUCCESS CASE
+      await supabase
         .from('transactions')
         .update({
           status: 'completed',
-          completed_at: new Date().toISOString(),
+          mpesa_receipt_number: receipt,
         })
         .eq('id', transaction.id);
 
-      if (updateError) {
-        console.error('❌ Update error:', updateError);
-      } else {
-        console.log('✅ Transaction marked completed');
-      }
+      console.log('✅ Payment completed:', receipt);
 
-      // Trigger STK Query in background (source of truth for receipt)
-      setTimeout(() => {
-        confirmMpesaPayment(transaction.id, CheckoutRequestID);
-      }, 5000);
+      return NextResponse.json({ ResultCode: 0 });
     }
 
-    // FAILED CALLBACK
-    else {
-      const { error: failError } = await supabase
-        .from('transactions')
-        .update({
-          status: 'failed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', transaction.id);
-
-      if (failError) {
-        console.error('❌ Failed update error:', failError);
-      } else {
-        console.log('❌ Transaction marked failed');
-      }
-    }
-
-    return NextResponse.json({
-      ResultCode: 0,
-      ResultDesc: 'Accepted',
+    // 4. IF NO RECEIPT → ADD TO RETRY QUEUE
+    await supabase.from('mpesa_retries').insert({
+      checkout_request_id: CheckoutRequestID,
+      transaction_id: transaction.id,
+      attempts: 1,
+      next_retry_at: new Date(Date.now() + 5000).toISOString(),
+      status: 'pending',
     });
+
+    console.log('⚠️ Added to retry queue');
+
+    return NextResponse.json({ ResultCode: 0 });
   } catch (error) {
-    console.error('❌ Callback error:', error);
-
-    return NextResponse.json({
-      ResultCode: 0,
-      ResultDesc: 'Accepted',
-    });
+    console.error('Callback error:', error);
+    return NextResponse.json({ ResultCode: 0 });
   }
 }
