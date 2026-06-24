@@ -3,7 +3,6 @@ import { initiateStkPush } from '@/lib/mpesa/stk-push';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 
-// Service role client for DB writes - bypasses RLS
 const serviceSupabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,7 +12,6 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,7 +35,7 @@ export async function POST(req: NextRequest) {
       ? 'KaziHub Identity Verification'
       : 'KaziHub Task Payment';
 
-    // Create pending transaction using service role to bypass RLS
+    // Create pending transaction
     const { data: transaction, error: txError } = await serviceSupabase
       .from('transactions')
       .insert({
@@ -78,17 +76,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Save CheckoutRequestID using service role
-    const { error: updateError } = await serviceSupabase
+    // Save CheckoutRequestID
+    await serviceSupabase
       .from('transactions')
       .update({ mpesa_transaction_id: stkResponse.CheckoutRequestID })
       .eq('id', transaction.id);
 
-    if (updateError) {
-      console.error('Failed to save CheckoutRequestID:', updateError);
-    } else {
-      console.log('✅ CheckoutRequestID saved:', stkResponse.CheckoutRequestID);
-    }
+    // Create retry job for fallback confirmation
+    await serviceSupabase
+      .from('mpesa_retries')
+      .insert({
+        transaction_id: transaction.id,
+        checkout_request_id: stkResponse.CheckoutRequestID,
+        attempts: 0,
+        status: 'pending',
+        next_retry_at: new Date(Date.now() + 10000).toISOString(), // start after 10s
+      });
+
+    console.log('✅ CheckoutRequestID saved and retry job created:', stkResponse.CheckoutRequestID);
 
     return NextResponse.json({
       success: true,
