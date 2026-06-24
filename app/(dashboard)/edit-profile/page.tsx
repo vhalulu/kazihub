@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import ProfilePhotoUpload from '@/components/ProfilePhotoUpload'
+import SubscriptionPlans from '@/components/SubscriptionPlans'
 import { COUNTIES, getTownsForCounty } from '@/lib/kenya-locations'
 
 export default function EditProfilePage() {
@@ -63,7 +64,6 @@ export default function EditProfilePage() {
         bio: profileData.bio || '',
       })
 
-      // Set available towns if county is already selected
       if (profileData.county) {
         setAvailableTowns(getTownsForCounty(profileData.county))
       }
@@ -90,7 +90,6 @@ export default function EditProfilePage() {
       newErrors.town = 'Town is required'
     }
 
-    // Email validation (optional but must be valid if provided)
     if (formData.email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(formData.email)) {
@@ -105,9 +104,7 @@ export default function EditProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validate()) {
-      return
-    }
+    if (!validate()) return
 
     setSaving(true)
 
@@ -144,9 +141,7 @@ export default function EditProfilePage() {
       return
     }
 
-    if (!confirm(`Send password reset link to ${emailToUse}?`)) {
-      return
-    }
+    if (!confirm(`Send password reset link to ${emailToUse}?`)) return
 
     setSendingPasswordReset(true)
 
@@ -177,10 +172,12 @@ export default function EditProfilePage() {
     )
   }
 
+  const isTasker = profile?.user_type === 'tasker' || profile?.user_type === 'both'
+
   return (
     <div className="min-h-screen bg-gray-50">
       
-      {/* Professional Navigation */}
+      {/* Navigation */}
       <nav className="bg-[#2c3e50] border-b border-[#1a252f] sticky top-0 z-40 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -197,67 +194,47 @@ export default function EditProfilePage() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Profile</h1>
           <p className="text-gray-600">Update your profile information</p>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          
-          {/* Profile Photo Section */}
-          <div className="mb-6 pb-6 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Profile Photo</h2>
-            <ProfilePhotoUpload
-              userId={profile.id}
-              currentPhotoUrl={profile.profile_photo_url}
-              onUploadSuccess={(url) => setProfile({ ...profile, profile_photo_url: url })}
-            />
-          </div>
-
-          {/* Basic Info Form */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Basic Information</h2>
-              
-              {/* Verification Status */}
-              {profile.is_verified ? (
-                <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Verified
-                </div>
-              ) : profile.verification_status === 'pending' ? (
-                <div className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Verification Pending
-                </div>
-              ) : (
-                <Link 
-                  href="/verify-identity"
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold hover:bg-blue-200 transition"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  Verify Identity
-                </Link>
-              )}
+
+            {/* Profile Photo */}
+            <div className="flex flex-col items-center pb-6 border-b border-gray-200">
+              <ProfilePhotoUpload
+                userId={profile.id}
+                currentPhotoUrl={profile.profile_photo_url}
+                onUploadSuccess={(url) => setProfile({...profile, profile_photo_url: url})}
+              />
+              <h2 className="text-xl font-bold text-gray-900 mt-4">{profile.full_name}</h2>
+              <div className="flex items-center gap-2 mt-2">
+                {profile.is_verified ? (
+                  <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Verified
+                  </div>
+                ) : profile.verification_status === 'pending' ? (
+                  <div className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold">
+                    Verification Pending
+                  </div>
+                ) : (
+                  <Link href="/verify-identity" className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold hover:bg-blue-200 transition">
+                    Verify Identity
+                  </Link>
+                )}
+              </div>
             </div>
 
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Full Name *
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name *</label>
               <input
                 type="text"
                 value={formData.full_name}
@@ -267,35 +244,24 @@ export default function EditProfilePage() {
                   errors.full_name ? 'border-red-500 bg-red-50' : 'border-gray-300'
                 }`}
               />
-              {errors.full_name && (
-                <p className="text-sm text-red-600 mt-1">{errors.full_name}</p>
-              )}
+              {errors.full_name && <p className="text-sm text-red-600 mt-1">{errors.full_name}</p>}
             </div>
 
-            {/* Phone Number - LOCKED */}
+            {/* Phone - Locked */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Phone Number
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
               <input
                 type="tel"
                 value={profile.phone_number}
                 disabled
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
               />
-              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                Phone number is locked for security. Contact support to change it.
-              </p>
+              <p className="text-xs text-amber-600 mt-1">Phone number is locked for security. Contact support to change it.</p>
             </div>
 
-            {/* Email - Optional */}
+            {/* Email */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address (Optional)
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address (Optional)</label>
               <input
                 type="email"
                 value={formData.email}
@@ -305,25 +271,17 @@ export default function EditProfilePage() {
                   errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
                 }`}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Add an email for password recovery and notifications
-              </p>
-              {errors.email && (
-                <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-              )}
+              <p className="text-xs text-gray-500 mt-1">Add an email for password recovery and notifications</p>
+              {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
             </div>
 
-            {/* Location - County and Town */}
+            {/* Location */}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  County *
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">County *</label>
                 <select
                   value={formData.county}
-                  onChange={(e) => {
-                    setFormData({ ...formData, county: e.target.value, town: '' })
-                  }}
+                  onChange={(e) => setFormData({ ...formData, county: e.target.value, town: '' })}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
                     errors.county ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
@@ -333,15 +291,11 @@ export default function EditProfilePage() {
                     <option key={county} value={county}>{county}</option>
                   ))}
                 </select>
-                {errors.county && (
-                  <p className="text-sm text-red-600 mt-1">{errors.county}</p>
-                )}
+                {errors.county && <p className="text-sm text-red-600 mt-1">{errors.county}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Town/Area *
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Town/Area *</label>
                 <select
                   value={formData.town}
                   onChange={(e) => setFormData({ ...formData, town: e.target.value })}
@@ -355,17 +309,13 @@ export default function EditProfilePage() {
                     <option key={town} value={town}>{town}</option>
                   ))}
                 </select>
-                {errors.town && (
-                  <p className="text-sm text-red-600 mt-1">{errors.town}</p>
-                )}
+                {errors.town && <p className="text-sm text-red-600 mt-1">{errors.town}</p>}
               </div>
             </div>
 
             {/* Bio */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Bio / About You
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Bio / About You</label>
               <textarea
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
@@ -373,46 +323,40 @@ export default function EditProfilePage() {
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                {formData.bio.length} characters
-              </p>
+              <p className="text-sm text-gray-500 mt-1">{formData.bio.length} characters</p>
             </div>
 
-            {/* Account Type Info */}
+            {/* Account Type */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm font-semibold text-gray-700 mb-1">Account Type</p>
               <p className="text-lg font-bold text-blue-600 capitalize">{profile.user_type}</p>
-              <p className="text-xs text-gray-600 mt-1">
-                To change your account type, please contact support
-              </p>
+              <p className="text-xs text-gray-600 mt-1">To change your account type, please contact support</p>
             </div>
 
-            {/* Password Change Section */}
+            {/* Password */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm font-semibold text-gray-700 mb-2">Password</p>
               <button
                 type="button"
                 onClick={handlePasswordReset}
                 disabled={sendingPasswordReset}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition disabled:opacity-50"
               >
                 {sendingPasswordReset ? 'Sending...' : 'Send Password Reset Link'}
               </button>
               <p className="text-xs text-gray-600 mt-2">
-                {formData.email.trim() || profile.email 
-                  ? `Link will be sent to ${formData.email.trim() || profile.email}` 
+                {formData.email.trim() || profile.email
+                  ? `Link will be sent to ${formData.email.trim() || profile.email}`
                   : 'Add an email address above to reset your password'}
               </p>
             </div>
 
-            {/* Error Message */}
             {errors.form && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-600">{errors.form}</p>
               </div>
             )}
 
-            {/* Buttons */}
             <div className="flex gap-4">
               <button
                 type="button"
@@ -424,7 +368,7 @@ export default function EditProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -432,6 +376,30 @@ export default function EditProfilePage() {
 
           </form>
         </div>
+
+        {/* Subscription Section - Only for Taskers */}
+        {isTasker && (
+          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">KaziHub Pro</h2>
+                <p className="text-sm text-gray-600">Unlimited task applications</p>
+              </div>
+            </div>
+
+            <SubscriptionPlans
+              userId={profile.id}
+              userPhone={profile.phone_number}
+              isPro={profile.is_pro_tasker}
+              onSuccess={() => setProfile({...profile, is_pro_tasker: true})}
+            />
+          </div>
+        )}
 
       </div>
     </div>
