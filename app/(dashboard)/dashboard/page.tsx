@@ -413,7 +413,7 @@ export default function DashboardPage() {
                     href="/edit-profile#subscription"
                     className="block w-full text-center px-4 py-3 bg-[#3B82F6] text-white rounded-md text-sm font-bold hover:bg-[#2563EB] transition shadow-sm"
                   >
-                    {profile.is_pro_tasker ? '⭐ Manage Subscription' : '⭐ Subscribe to Pro'}
+                    <span className="text-white">{profile.is_pro_tasker ? '⭐ Manage Subscription' : '⭐ Subscribe to Pro'}</span>
                   </Link>
                 )}
               </div>
