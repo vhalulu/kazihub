@@ -411,11 +411,7 @@ export default function DashboardPage() {
                 {(profile.user_type === 'tasker' || profile.user_type === 'both') && (
                   <Link
                     href="/edit-profile#subscription"
-                    className={`block w-full text-center px-4 py-3 rounded-md text-sm font-bold transition shadow-sm ${
-                      profile.is_pro_tasker
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:opacity-90'
-                    }`}
+                    className="block w-full text-center px-4 py-3 bg-[#3B82F6] text-white rounded-md text-sm font-bold hover:bg-[#2563EB] transition shadow-sm"
                   >
                     {profile.is_pro_tasker ? '⭐ Manage Subscription' : '⭐ Subscribe to Pro'}
                   </Link>
