@@ -13,7 +13,6 @@ interface MpesaPaymentModalProps {
   defaultPhone?: string;
 }
 
-// Format phone for display - convert +2547XX to 07XX or +2541XX to 01XX
 function formatPhoneForDisplay(phone: string): string {
   if (!phone) return ''
   const cleaned = phone.replace(/\s/g, '')
@@ -22,7 +21,6 @@ function formatPhoneForDisplay(phone: string): string {
   return cleaned
 }
 
-// Format phone for MPesa API - convert 07XX to 2547XX
 function formatPhoneForApi(phone: string): string {
   const cleaned = phone.replace(/\D/g, '')
   if (cleaned.startsWith('0')) return '254' + cleaned.slice(1)
@@ -79,11 +77,12 @@ export default function MpesaPaymentModal({
         return
       }
 
-      setMessage(data.message || 'Check your phone and enter your MPesa PIN')
+      setMessage('STK Push sent! Enter your MPesa PIN on your phone.')
       setLoading(false)
       setPolling(true)
 
-      await pollStatus(data.transactionId)
+      // Poll DB for callback confirmation
+      pollStatus(data.transactionId)
 
     } catch (err) {
       setError('Network error. Please try again.')
@@ -91,14 +90,15 @@ export default function MpesaPaymentModal({
     }
   }
 
-  const pollStatus = async (transactionId: string) => {
-    const maxAttempts = 12
+  const pollStatus = (transactionId: string) => {
+    // Poll every 3 seconds for up to 2 minutes
+    const maxAttempts = 40
     let attempts = 0
 
     const poll = async () => {
       if (attempts >= maxAttempts) {
         setPolling(false)
-        setError('Payment timeout. If you paid, please contact support.')
+        setError('Payment timeout. If you paid, your account will be updated shortly.')
         return
       }
 
@@ -110,7 +110,7 @@ export default function MpesaPaymentModal({
 
         if (data.transaction?.status === 'completed') {
           setPolling(false)
-          setMessage('✅ Payment successful!')
+          setMessage('✅ Payment confirmed! Activating your subscription...')
           setTimeout(() => {
             onSuccess()
             onClose()
@@ -124,12 +124,14 @@ export default function MpesaPaymentModal({
           return
         }
 
-        setTimeout(poll, 5000)
+        // Still pending - keep polling
+        setTimeout(poll, 3000)
       } catch {
-        setTimeout(poll, 5000)
+        setTimeout(poll, 3000)
       }
     }
 
+    // Start polling after 5 seconds (give Safaricom time to send callback)
     setTimeout(poll, 5000)
   }
 
@@ -146,7 +148,6 @@ export default function MpesaPaymentModal({
           )}
         </div>
 
-        {/* Description */}
         <p className="text-gray-600 text-sm mb-6">{description}</p>
 
         {/* Amount */}
@@ -180,7 +181,7 @@ export default function MpesaPaymentModal({
           </div>
         )}
 
-        {/* Success/Info message */}
+        {/* Message */}
         {message && (
           <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-4 py-3 text-sm mb-4">
             {message}
@@ -191,10 +192,11 @@ export default function MpesaPaymentModal({
         {polling && (
           <div className="flex flex-col items-center py-4 mb-4">
             <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm text-gray-600 text-center">
+            <p className="text-sm text-gray-600 text-center font-medium">
               Waiting for payment confirmation...
-              <br />
-              <span className="text-xs text-gray-400">Enter your MPesa PIN on your phone</span>
+            </p>
+            <p className="text-xs text-gray-400 text-center mt-1">
+              Enter your MPesa PIN on your phone. This may take up to 30 seconds.
             </p>
           </div>
         )}
@@ -219,7 +221,6 @@ export default function MpesaPaymentModal({
           </div>
         )}
 
-        {/* MPesa note */}
         <p className="text-xs text-gray-400 text-center mt-4">
           🔒 Secured by Safaricom MPesa
         </p>
