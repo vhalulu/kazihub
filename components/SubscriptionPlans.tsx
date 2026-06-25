@@ -6,7 +6,7 @@ import MpesaPaymentModal from '@/components/MpesaPaymentModal'
 
 const PLANS = [
   { id: '1week', label: '1 Week', duration: 7, amount: 100, billing_cycle: 'weekly', popular: false },
-  { id: '1month', label: '1 Month', duration: 30, amount: 350, billing_cycle: 'monthly', popular: true },
+  { id: '1month', label: '1 Month', duration: 30, amount: 11, billing_cycle: 'monthly', popular: true },
   { id: '3months', label: '3 Months', duration: 90, amount: 900, billing_cycle: 'quarterly', popular: false, save: 'Save KSh 150' },
   { id: '6months', label: '6 Months', duration: 180, amount: 1500, billing_cycle: 'biannual', popular: false, save: 'Save KSh 600' },
   { id: '1year', label: '1 Year', duration: 365, amount: 2500, billing_cycle: 'yearly', popular: false, save: 'Save KSh 1,700' },
