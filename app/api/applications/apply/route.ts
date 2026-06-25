@@ -5,7 +5,6 @@ export async function POST(request: Request) {
   try {
     const { taskId, proposedPrice, message } = await request.json()
 
-    // Validate inputs
     if (!taskId || !proposedPrice || !message) {
       return NextResponse.json(
         { error: 'Task ID, proposed price, and message are required' },
@@ -15,17 +14,12 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user profile to verify they're a tasker
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('user_type')
@@ -33,57 +27,33 @@ export async function POST(request: Request) {
       .single()
 
     if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
-    // Verify user is a tasker or both
     if (profile.user_type !== 'tasker' && profile.user_type !== 'both') {
-      return NextResponse.json(
-        { error: 'Only taskers can apply to tasks' },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Only taskers can apply to tasks' }, { status: 403 })
     }
 
-    // Get task details with applications count
     const { data: task, error: taskError } = await supabase
       .from('tasks')
-      .select(`
-        *,
-        applications:task_applications(id)
-      `)
+      .select(`*, applications:task_applications(id)`)
       .eq('id', taskId)
       .single()
 
     if (taskError || !task) {
-      return NextResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
-    // Check if user is trying to apply to their own task
     if (task.client_id === user.id) {
-      return NextResponse.json(
-        { error: 'You cannot apply to your own task' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'You cannot apply to your own task' }, { status: 400 })
     }
 
-    // Check if task is still open
     if (task.status !== 'open') {
-      return NextResponse.json(
-        { error: 'This task is no longer accepting applications' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'This task is no longer accepting applications' }, { status: 400 })
     }
 
-    // CRITICAL: Check if task is FULL
     if (task.max_applicants) {
       const currentApplicationsCount = task.applications?.length || 0
-      
       if (currentApplicationsCount >= task.max_applicants) {
         return NextResponse.json(
           { error: 'This task has reached its maximum number of applications and is now FULL' },
@@ -92,8 +62,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Check if user has already applied
-    const { data: existingApplication, error: existingError } = await supabase
+    const { data: existingApplication } = await supabase
       .from('task_applications')
       .select('id')
       .eq('task_id', taskId)
@@ -101,13 +70,9 @@ export async function POST(request: Request) {
       .single()
 
     if (existingApplication) {
-      return NextResponse.json(
-        { error: 'You have already applied to this task' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'You have already applied to this task' }, { status: 400 })
     }
 
-    // Create the application
     const { data: application, error: applicationError } = await supabase
       .from('task_applications')
       .insert({
@@ -122,8 +87,45 @@ export async function POST(request: Request) {
 
     if (applicationError) throw applicationError
 
-    // TODO: Send notification to task owner
-    // This will be implemented in the notifications module
+    // Send email notification to task owner
+    try {
+      const { data: clientProfile } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', task.client_id)
+        .single()
+
+      const { data: taskerProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+
+      if (clientProfile?.email) {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'new_application',
+            to: clientProfile.email,
+            data: {
+              clientName: clientProfile.full_name,
+              taskerName: taskerProfile?.full_name,
+              taskTitle: task.title,
+              proposedPrice,
+              message,
+              taskId
+            }
+          })
+        })
+        console.log('✅ Email notification sent to:', clientProfile.email)
+      } else {
+        console.log('⚠️ Client has no email address, skipping notification')
+      }
+    } catch (emailError) {
+      console.error('Email notification error:', emailError)
+      // Don't fail the application if email fails
+    }
 
     return NextResponse.json({ 
       success: true,
