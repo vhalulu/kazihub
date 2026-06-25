@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Send email via Resend
     const response = await resend.emails.send({
-      from: 'onboarding@resend.dev', // Resend's test email (works immediately)
+      from: 'noreply@tangleonline.org', // Resend's test email (works immediately)
       to: [to],
       subject: emailContent.subject,
       html: emailContent.html,
