@@ -291,10 +291,10 @@ export default function ApplyModal({ task, isOpen, onClose, onSuccess, userProfi
             isOpen={showPaymentModal}
             onClose={() => setShowPaymentModal(false)}
             onSuccess={handleSubscriptionSuccess}
-            amount={10}
+            amount={350}
             type="subscription"
             title="KaziHub Pro Subscription"
-            description="Pay KSh 10 via MPesa to unlock unlimited applications for 30 days."
+            description="Pay KSh 350 via MPesa to unlock unlimited applications for 30 days."
             defaultPhone={userProfile.phone_number || ''}
           />
         )}
