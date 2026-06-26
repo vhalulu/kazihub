@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
       console.log('✅ Real MPesa receipt received:', mpesaReceiptNumber);
 
-      // Update transaction with REAL receipt number from callback
+      // Update transaction with REAL Safaricom receipt number from callback
       await supabase
         .from('transactions')
         .update({
