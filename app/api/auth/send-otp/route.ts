@@ -13,11 +13,6 @@ async function sendSMSViaMobivas(phone: string, message: string): Promise<boolea
     const clientId = process.env.MOBIVAS_CLIENT_ID!
     const senderId = process.env.MOBIVAS_SENDER_ID || 'TAIFA'
 
-    console.log('🔑 API Key length:', apiKey?.length)
-    console.log('🔑 API Key first 10 chars:', apiKey?.substring(0, 10))
-    console.log('🔑 Client ID:', clientId)
-    console.log('🔑 Sender ID:', senderId)
-
     const payload = {
       MessageParameters: [
         {
@@ -31,8 +26,7 @@ async function sendSMSViaMobivas(phone: string, message: string): Promise<boolea
     }
 
     console.log('📱 Sending SMS via Mobivas to:', cleanPhone)
-    console.log('📦 Payload:', JSON.stringify(payload))
-
+  
     const res = await fetch('http://user.smsmobivas.co.ke/api/v2/SendBulkSMS', {
       method: 'POST',
       headers: {
