@@ -87,6 +87,22 @@ export async function POST(request: NextRequest) {
 
       if (authError) {
         console.error('Auth error:', authError)
+
+        // Supabase's error refers to the internal placeholder email
+        // (phone@kazihub.app), but users only ever see a phone number,
+        // so translate that specific case into a phone-based message.
+        const isDuplicate =
+          authError.code === 'email_exists' ||
+          authError.status === 422 ||
+          /already.*registered|already.*exists/i.test(authError.message || '')
+
+        if (isDuplicate) {
+          return NextResponse.json(
+            { error: 'This phone number is already registered. Please log in instead.' },
+            { status: 400 }
+          )
+        }
+
         return NextResponse.json(
           { error: authError.message },
           { status: 400 }
