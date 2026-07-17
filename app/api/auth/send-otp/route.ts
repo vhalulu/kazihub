@@ -9,6 +9,15 @@ async function sendSMSViaMobivas(phone: string, message: string): Promise<boolea
     // Remove + from phone number for Mobivas
     const cleanPhone = phone.replace('+', '')
 
+    const apiKey = process.env.MOBIVAS_API_KEY!
+    const clientId = process.env.MOBIVAS_CLIENT_ID!
+    const senderId = process.env.MOBIVAS_SENDER_ID || 'TAIFA'
+
+    console.log('🔑 API Key length:', apiKey?.length)
+    console.log('🔑 API Key first 10 chars:', apiKey?.substring(0, 10))
+    console.log('🔑 Client ID:', clientId)
+    console.log('🔑 Sender ID:', senderId)
+
     const payload = {
       MessageParameters: [
         {
@@ -16,12 +25,13 @@ async function sendSMSViaMobivas(phone: string, message: string): Promise<boolea
           Number: cleanPhone
         }
       ],
-      ApiKey: process.env.MOBIVAS_API_KEY!,
-      SenderId: process.env.MOBIVAS_SENDER_ID || 'TAIFA',
-      ClientId: process.env.MOBIVAS_CLIENT_ID!
+      ApiKey: apiKey,
+      SenderId: senderId,
+      ClientId: clientId
     }
 
     console.log('📱 Sending SMS via Mobivas to:', cleanPhone)
+    console.log('📦 Payload:', JSON.stringify(payload))
 
     const res = await fetch('http://user.smsmobivas.co.ke/api/v2/SendBulkSMS', {
       method: 'POST',
@@ -96,7 +106,6 @@ export async function POST(request: NextRequest) {
 
     if (!sent) {
       console.error('❌ Failed to send SMS via Mobivas')
-      // Don't fail the request - OTP is stored, user can check manually
       return NextResponse.json({ 
         success: true,
         message: 'OTP generated but SMS delivery failed. Please try again.',
