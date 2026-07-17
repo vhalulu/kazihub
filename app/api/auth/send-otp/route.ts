@@ -1,8 +1,53 @@
 // app/api/auth/send-otp/route.ts
-// Stores OTP in Supabase, skips SMS sending temporarily
+// Sends OTP via Mobivas SMS
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+
+async function sendSMSViaMobivas(phone: string, message: string): Promise<boolean> {
+  try {
+    // Remove + from phone number for Mobivas
+    const cleanPhone = phone.replace('+', '')
+
+    const payload = {
+      MessageParameters: [
+        {
+          Text: message,
+          Number: cleanPhone
+        }
+      ],
+      ApiKey: process.env.MOBIVAS_API_KEY!,
+      SenderId: process.env.MOBIVAS_SENDER_ID || 'TAIFA',
+      ClientId: process.env.MOBIVAS_CLIENT_ID!
+    }
+
+    console.log('📱 Sending SMS via Mobivas to:', cleanPhone)
+
+    const res = await fetch('http://user.smsmobivas.co.ke/api/v2/SendBulkSMS', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    })
+
+    const data = await res.json()
+    console.log('Mobivas response:', JSON.stringify(data))
+
+    // ErrorCode 0 = success
+    if (data.ErrorCode === '0' || data.ErrorCode === 0) {
+      console.log('✅ SMS sent successfully via Mobivas')
+      return true
+    }
+
+    console.error('❌ Mobivas SMS failed:', data)
+    return false
+
+  } catch (error) {
+    console.error('❌ Mobivas SMS error:', error)
+    return false
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +76,8 @@ export async function POST(request: NextRequest) {
       .insert({
         phone_number: phoneNumber,
         otp_code: otp,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        is_used: false,
       })
 
     if (insertError) {
@@ -43,18 +89,25 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ OTP stored in Supabase')
-    console.log('💡 Check otp_codes table to see OTP:', otp)
 
-    // SKIP SMS SENDING FOR NOW
-    console.log('⚠️ SMS DISABLED - OTP saved in database')
-    console.log('⚠️ Check Supabase otp_codes table')
+    // Send OTP via Mobivas
+    const message = `Your KaziHub verification code is: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`
+    const sent = await sendSMSViaMobivas(phoneNumber, message)
 
-    // Return success
+    if (!sent) {
+      console.error('❌ Failed to send SMS via Mobivas')
+      // Don't fail the request - OTP is stored, user can check manually
+      return NextResponse.json({ 
+        success: true,
+        message: 'OTP generated but SMS delivery failed. Please try again.',
+        smsDelivered: false
+      })
+    }
+
     return NextResponse.json({ 
       success: true,
-      message: 'OTP generated (check Supabase otp_codes table)',
-      // Show OTP in development
-      developmentOTP: process.env.NODE_ENV === 'development' ? otp : undefined
+      message: 'OTP sent to your phone number',
+      smsDelivered: true
     })
 
   } catch (error: any) {
